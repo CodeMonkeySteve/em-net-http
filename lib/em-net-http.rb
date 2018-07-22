@@ -117,7 +117,7 @@ module Net
 
       uri = Addressable::URI.parse("#{use_ssl? ? 'https://' : 'http://'}#{addr_port}#{req.path}")
 
-      body = body || req.body
+      body = body || req.body || req.body_stream
       opts = body.nil? ? {} : {:body => body}
       if use_ssl?
         sslopts = opts[:ssl] = {}
