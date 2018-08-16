@@ -6,6 +6,12 @@ require 'fiber'
 
 module EventMachine
   module NetHTTP
+
+    @main_thread = Thread.current
+    def self.use_eventmachine?
+      ::EM::reactor_running? && (::Thread.current == @main_thread)
+    end
+
     class Response
       attr_reader :code, :body, :header, :message, :http_version
       alias_method :msg, :message
@@ -75,7 +81,7 @@ module Net
 
     def read_body(dest=nil, &block)
       return @body if @already_buffered
-      return orig_net_http_read_body(dest, &block) unless ::EM.reactor_running?
+      return orig_net_http_read_body(dest, &block) unless EM::NetHTTP.use_eventmachine?
       if block_given?
         f = Fiber.current
         @httpreq.callback { |res| f.resume }
@@ -106,14 +112,14 @@ module Net
 
     def do_start
 
-      return orig_net_http_do_start unless ::EM.reactor_running?
+      return orig_net_http_do_start unless EM::NetHTTP.use_eventmachine?
 
       @started = true
     end
 
     def request(req, body = nil, &block)
 
-      return orig_net_http_request(req, body, &block) unless ::EM.reactor_running?
+      return orig_net_http_request(req, body, &block) unless EM::NetHTTP.use_eventmachine?
 
       uri = Addressable::URI.parse("#{use_ssl? ? 'https://' : 'http://'}#{addr_port}#{req.path}")
 
